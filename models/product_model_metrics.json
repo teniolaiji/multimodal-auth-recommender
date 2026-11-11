@@ -1,0 +1,122 @@
+{
+  "best_model": "Random Forest",
+  "n_rows": 117,
+  "n_customers": 61,
+  "holdout_rows": 22,
+  "holdout_customers": 13,
+  "cv": {
+    "Baseline (most frequent)": {
+      "accuracy_mean": 0.2193,
+      "f1_macro_mean": 0.0719,
+      "log_loss_mean": 28.1384,
+      "accuracy_std": 0.0131,
+      "f1_macro_std": 0.0035,
+      "log_loss_std": 0.4718
+    },
+    "Baseline (class prior)": {
+      "accuracy_mean": 0.2193,
+      "f1_macro_mean": 0.0719,
+      "log_loss_mean": 1.6008,
+      "accuracy_std": 0.0131,
+      "f1_macro_std": 0.0035,
+      "log_loss_std": 0.006
+    },
+    "Logistic Regression": {
+      "accuracy_mean": 0.2598,
+      "f1_macro_mean": 0.2362,
+      "log_loss_mean": 2.0456,
+      "accuracy_std": 0.0696,
+      "f1_macro_std": 0.0717,
+      "log_loss_std": 0.2891
+    },
+    "Random Forest": {
+      "accuracy_mean": 0.2647,
+      "f1_macro_mean": 0.2119,
+      "log_loss_mean": 1.6343,
+      "accuracy_std": 0.0755,
+      "f1_macro_std": 0.0681,
+      "log_loss_std": 0.0958
+    },
+    "Gradient Boosting": {
+      "accuracy_mean": 0.2393,
+      "f1_macro_mean": 0.2177,
+      "log_loss_mean": 2.0048,
+      "accuracy_std": 0.0734,
+      "f1_macro_std": 0.069,
+      "log_loss_std": 0.3229
+    }
+  },
+  "holdout": {
+    "Baseline (most frequent)": {
+      "accuracy": 0.2273,
+      "f1_macro": 0.0741,
+      "log_loss": 27.8519
+    },
+    "Baseline (class prior)": {
+      "accuracy": 0.2273,
+      "f1_macro": 0.0741,
+      "log_loss": 1.6247
+    },
+    "Logistic Regression": {
+      "accuracy": 0.1364,
+      "f1_macro": 0.0974,
+      "log_loss": 2.0245
+    },
+    "Random Forest": {
+      "accuracy": 0.1818,
+      "f1_macro": 0.152,
+      "log_loss": 1.7045
+    },
+    "Gradient Boosting": {
+      "accuracy": 0.1818,
+      "f1_macro": 0.1644,
+      "log_loss": 2.1717
+    }
+  },
+  "confusion_matrix": {
+    "labels": [
+      "Books",
+      "Clothing",
+      "Electronics",
+      "Groceries",
+      "Sports"
+    ],
+    "matrix": [
+      [
+        0,
+        3,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        2,
+        1
+      ],
+      [
+        0,
+        0,
+        2,
+        0,
+        2
+      ],
+      [
+        1,
+        2,
+        3,
+        0,
+        1
+      ]
+    ]
+  }
+}
