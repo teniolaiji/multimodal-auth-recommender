@@ -21,15 +21,23 @@ import product_model as pm       # predict_for_customer(customer_id) -> (categor
 import audio_pipeline as ap      # verify_speaker(path, expected_member) -> (accepted, predicted, confidence)
 
 try:
-    import face_pipeline as fp   # recognize_face(path) -> (member or None, confidence)
-except ImportError:
-    fp = None
+    import image_features as fp  # recognise_face(path) -> (member or "no_face", confidence)
+except ImportError as err:
+    fp, FACE_IMPORT_ERROR = None, err
 
 
 def check_face(path: Path):
+    """Return (member, confidence), or (None, confidence) when access must be denied.
+
+    The face model always picks one of the four members, even for a stranger, so a
+    low-confidence answer is treated as "not recognised" (threshold in config.py).
+    """
     if fp is None:
-        raise SystemExit("Face model not available yet: src/face_pipeline.py with recognize_face() is missing.")
-    return fp.recognize_face(path)
+        raise SystemExit(f"Face model could not be loaded (src/image_features.py): {FACE_IMPORT_ERROR}")
+    member, conf = fp.recognise_face(path)
+    if member == "no_face" or member not in config.MEMBER_TO_CUSTOMER or conf < config.FACE_THRESHOLD:
+        return None, conf
+    return member, conf
 
 
 def run(face_path: Path, voice_path: Path) -> bool:
@@ -45,7 +53,8 @@ def run(face_path: Path, voice_path: Path) -> bool:
     print(f"[1/3] Face recognition: {Path(face_path).name}")
     member, face_conf = check_face(face_path)
     if member is None:
-        print(f"      ACCESS DENIED: face not recognised (confidence {face_conf:.2f})")
+        why = "no face found" if face_conf == 0 else f"confidence {face_conf:.2f} < threshold {config.FACE_THRESHOLD}"
+        print(f"      ACCESS DENIED: face not recognised ({why})")
         return False
     print(f"      Recognised {member} (confidence {face_conf:.2f})")
 

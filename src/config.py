@@ -43,3 +43,6 @@ FACE_MODEL_PATH = MODELS_DIR / "face_model.joblib"
 
 FACE_SIZE = 224            #every face is resized to 224 x 224
 FACE_BORDER = 0.05         #extra space around the face(5% of its width)
+# Below this confidence the app says "face not recognised". Member photos score 0.996-1.000,
+# the outsider photos (outsider_towi_*) score 0.79-0.81, so 0.90 sits in the gap.
+FACE_THRESHOLD = 0.90
