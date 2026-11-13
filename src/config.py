@@ -36,3 +36,15 @@ MEMBER_TO_CUSTOMER = {
     "towi": 152,
     "harmony": 188,
 }
+
+# ---------------------------------------------------------------- image
+IMAGE_FEATURES_CSV = FEATURES_DIR / "image_features.csv"
+FACE_MODEL_PATH = MODELS_DIR / "face_model.joblib"
+FACE_METRICS_PATH = MODELS_DIR / "face_model_metrics.json"
+
+FACE_SIZE = 224            #every face is resized to 224 x 224
+FACE_BORDER = 0.05         #extra space around the face(5% of its width)
+# Below this confidence the app says "face not recognised". Held-out member photos
+# (leave-one-photo-out) score 0.985-1.000, the outsider photos (outsider_towi_*) score 0.65-0.89,
+# so 0.94 sits in the middle of the gap. See models/face_model_metrics.json.
+FACE_THRESHOLD = 0.94

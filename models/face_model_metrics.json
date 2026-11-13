@@ -1,0 +1,21 @@
+{
+  "all_rows": {
+    "accuracy": 1.0,
+    "f1_macro": 1.0,
+    "log_loss": 0.003530182289629045
+  },
+  "originals_only": {
+    "accuracy": 1.0,
+    "f1_macro": 1.0,
+    "log_loss": 0.0030582383550457675
+  },
+  "threshold_check": {
+    "genuine_heldout_min": 0.9846950412799157,
+    "genuine_heldout_median": 0.9986748483251396,
+    "outsider_confidences": [
+      0.892,
+      0.645
+    ],
+    "threshold_used": 0.94
+  }
+}
