@@ -139,3 +139,46 @@ def build_feature_table(root: Path = AUDIO_DIR, outsiders: bool = False, do_augm
 
 def feature_columns(df: pd.DataFrame) -> list[str]:
     return [c for c in df.columns if c not in META_COLS]
+
+
+# ---------------------------------------------------------------- 4. model
+def candidate_models() -> dict:
+    return {
+        "logistic_regression": Pipeline([("scale", StandardScaler()),
+                                         ("clf", LogisticRegression(max_iter=5000, random_state=RANDOM_STATE))]),
+        "random_forest": RandomForestClassifier(n_estimators=300, random_state=RANDOM_STATE),
+    }
+
+
+def cross_validate(df: pd.DataFrame, model) -> tuple[dict, pd.DataFrame]:
+    """Leave-one-recording-out: each fold hides ONE original recording and all its augmented copies.
+
+    Returns overall metrics and a per-row table of held-out predictions.
+    """
+    cols = feature_columns(df)
+    X, y, groups = df[cols], df["member"], df["source_audio"]
+    classes = np.sort(y.unique())
+    proba = np.zeros((len(df), len(classes)))
+    for train_idx, test_idx in LeaveOneGroupOut().split(X, y, groups):
+        fitted = clone(model).fit(X.iloc[train_idx], y.iloc[train_idx])
+        proba[test_idx] = fitted.predict_proba(X.iloc[test_idx])
+    pred = classes[proba.argmax(axis=1)]
+
+    results = df[META_COLS].copy()
+    results["predicted"] = pred
+    results["confidence"] = proba.max(axis=1)
+    results["correct"] = results["predicted"] == results["member"]
+
+    def score(mask):
+        return {"accuracy": accuracy_score(y[mask], pred[mask]),
+                "f1_macro": f1_score(y[mask], pred[mask], average="macro"),
+                "log_loss": log_loss(y[mask], proba[mask], labels=classes)}
+
+    originals = (df["augmentation"] == "original").to_numpy()
+    metrics = {"all_rows": score(np.ones(len(df), bool)), "originals_only": score(originals)}
+    return metrics, results
+
+
+def train_final_model(df: pd.DataFrame, model):
+    cols = feature_columns(df)
+    return clone(model).fit(df[cols], df["member"])
