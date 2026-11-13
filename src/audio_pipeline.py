@@ -95,3 +95,47 @@ def augment(y: np.ndarray, sr: int = SR, seed: int = 0) -> dict[str, np.ndarray]
         "speed_slow": librosa.effects.time_stretch(y, rate=0.9),
         "noise": y + noise,
     }
+
+
+# ---------------------------------------------------------------- 3. features
+def extract_features(y: np.ndarray, sr: int = SR) -> dict[str, float]:
+    """Turn a clip of any length into the same 47 numbers.
+
+    Each feature is computed per 32 ms frame, then summarised over the clip
+    with its mean (typical value) and std (how much it moves around).
+    """
+    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=N_MFCC)          # (13, frames): shape of the vocal tract
+    mfcc_delta = librosa.feature.delta(mfcc)                           # how fast that shape changes
+    rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr, roll_percent=0.85)[0]
+    centroid = librosa.feature.spectral_centroid(y=y, sr=sr)[0]
+    rms = librosa.feature.rms(y=y)[0]                                  # energy (loudness) per frame
+    zcr = librosa.feature.zero_crossing_rate(y)[0]
+
+    feats: dict[str, float] = {}
+    for i in range(N_MFCC):
+        feats[f"mfcc_{i + 1}_mean"] = float(mfcc[i].mean())
+        feats[f"mfcc_{i + 1}_std"] = float(mfcc[i].std())
+        feats[f"mfcc_delta_{i + 1}_std"] = float(mfcc_delta[i].std())
+    for name, values in [("spectral_rolloff", rolloff), ("spectral_centroid", centroid),
+                         ("rms_energy", rms), ("zcr", zcr)]:
+        feats[f"{name}_mean"] = float(values.mean())
+        feats[f"{name}_std"] = float(values.std())
+    return feats
+
+
+def build_feature_table(root: Path = AUDIO_DIR, outsiders: bool = False, do_augment: bool = True) -> pd.DataFrame:
+    """One row per (clip, augmentation). Members: data/audio/<member>/*.wav. Outsiders: flat folder."""
+    files = sorted(root.glob("*.wav")) if outsiders else sorted(root.glob("*/*.wav"))
+    rows = []
+    for path in files:
+        member = speaker_of_outsider(path) if outsiders else path.parent.name.lower()
+        y = load_clip(path)
+        versions = augment(y, seed=zlib.crc32(path.name.encode())) if do_augment else {"original": y}
+        for aug_name, y_aug in versions.items():
+            rows.append({"member": member, "phrase": phrase_of(path), "augmentation": aug_name,
+                         "source_audio": f"{member}/{path.name}", **extract_features(y_aug)})
+    return pd.DataFrame(rows)
+
+
+def feature_columns(df: pd.DataFrame) -> list[str]:
+    return [c for c in df.columns if c not in META_COLS]
