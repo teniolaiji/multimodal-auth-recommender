@@ -72,3 +72,26 @@ def speaker_of_outsider(path: Path) -> str:
     """outsider_towi_yes_approve.wav -> outsider_towi (one outsider per member who brought them)."""
     match = re.match(r"(outsider_[a-z]+)", path.stem.lower())
     return match.group(1) if match else path.stem.lower()
+
+
+# ---------------------------------------------------------------- 2. augmentation
+def augment(y: np.ndarray, sr: int = SR, seed: int = 0) -> dict[str, np.ndarray]:
+    """Five realistic variations of one clip, plus the original.
+
+    Kept deliberately small so the voice still sounds like the same person:
+      pitch +/- 1 semitone   a slightly higher/lower voice (tired, excited)
+      speed x1.1 / x0.9      talking a bit faster or slower (pitch unchanged)
+      background noise       a noisier room, 20 dB below the speech
+    """
+    rng = np.random.default_rng(seed)
+    noise = rng.normal(0, 1, len(y))
+    signal_power = np.mean(y ** 2)
+    noise *= np.sqrt(signal_power / 10 ** (NOISE_SNR_DB / 10))
+    return {
+        "original": y,
+        "pitch_up": librosa.effects.pitch_shift(y, sr=sr, n_steps=1),
+        "pitch_down": librosa.effects.pitch_shift(y, sr=sr, n_steps=-1),
+        "speed_fast": librosa.effects.time_stretch(y, rate=1.1),
+        "speed_slow": librosa.effects.time_stretch(y, rate=0.9),
+        "noise": y + noise,
+    }
