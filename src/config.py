@@ -36,3 +36,10 @@ MEMBER_TO_CUSTOMER = {
     "towi": 152,
     "harmony": 188,
 }
+
+# ---------------------------------------------------------------- image
+IMAGE_FEATURES_CSV = FEATURES_DIR / "image_features.csv"
+FACE_MODEL_PATH = MODELS_DIR / "face_model.joblib"
+
+FACE_SIZE = 224            #every face is resized to 224 x 224
+FACE_BORDER = 0.05         #extra space around the face(5% of its width)
