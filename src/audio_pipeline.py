@@ -182,3 +182,83 @@ def cross_validate(df: pd.DataFrame, model) -> tuple[dict, pd.DataFrame]:
 def train_final_model(df: pd.DataFrame, model):
     cols = feature_columns(df)
     return clone(model).fit(df[cols], df["member"])
+
+
+def choose_threshold(genuine_conf: np.ndarray, outsider_conf: np.ndarray | None) -> tuple[float, str]:
+    """Pick the confidence a voice needs to be accepted.
+
+    With outsiders: the threshold that best balances 'let members in' and 'keep outsiders out'
+    (balanced accuracy), using the LOWEST such value so members aren't rejected unnecessarily.
+    Without outsiders: fall back to the 5th percentile of genuine confidences.
+    """
+    if outsider_conf is None or len(outsider_conf) == 0:
+        return float(np.percentile(genuine_conf, 5)), "5th percentile of genuine confidences (no outsiders yet)"
+    best_t, best_score = 0.5, -1.0
+    for t in np.round(np.arange(0.30, 0.96, 0.01), 2):
+        score = ((genuine_conf >= t).mean() + (outsider_conf < t).mean()) / 2
+        if score > best_score:
+            best_t, best_score = float(t), score
+    return best_t, f"max balanced accuracy on tuning outsiders ({best_score:.2f})"
+
+
+def split_outsiders(out_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Half the outsider PEOPLE tune the threshold, the other half are kept hidden for the final test.
+    (With one outsider, it is used for tuning only and the test set is empty.)"""
+    people = sorted(out_df["member"].unique())
+    tune_people = people[: max(1, len(people) // 2)]
+    is_tune = out_df["member"].isin(tune_people)
+    return out_df[is_tune], out_df[~is_tune]
+
+
+def save_bundle(model, feature_cols: list[str], threshold: float, path: Path = MODEL_PATH) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump({"model": model, "feature_cols": feature_cols, "threshold": threshold, "sr": SR}, path)
+
+
+# ---------------------------------------------------------------- 5. app helper
+def verify_speaker(path: str | Path, expected_member: str, bundle: dict | None = None) -> tuple[bool, str, float]:
+    """For the CLI app: is this clip confidently the SAME member the face model recognised?
+
+    Returns (accepted, predicted_member, confidence).
+    """
+    bundle = bundle or joblib.load(MODEL_PATH)
+    feats = pd.DataFrame([extract_features(load_clip(path))])[bundle["feature_cols"]]
+    proba = bundle["model"].predict_proba(feats)[0]
+    best = int(np.argmax(proba))
+    predicted, confidence = str(bundle["model"].classes_[best]), float(proba[best])
+    accepted = predicted == expected_member.lower() and confidence >= bundle["threshold"]
+    return accepted, predicted, confidence
+
+
+# ---------------------------------------------------------------- run everything
+def main() -> None:
+    df = build_feature_table()
+    FEATURES_CSV.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(FEATURES_CSV, index=False)
+    print(f"Saved {df.shape} -> {FEATURES_CSV}")
+
+    scores = {}
+    for name, model in candidate_models().items():
+        metrics, results = cross_validate(df, model)
+        scores[name] = (metrics, results)
+        print(name, {k: {m: round(v, 3) for m, v in d.items()} for k, d in metrics.items()})
+    best_name = max(scores, key=lambda n: scores[n][0]["originals_only"]["f1_macro"])
+    _, results = scores[best_name]
+    model = train_final_model(df, candidate_models()[best_name])
+
+    genuine = results.query("augmentation == 'original' and correct")["confidence"].to_numpy()
+    tune_conf, test_df = None, None
+    if UNAUTH_AUDIO_DIR.exists() and any(UNAUTH_AUDIO_DIR.glob("*.wav")):
+        out_df = build_feature_table(UNAUTH_AUDIO_DIR, outsiders=True, do_augment=False)
+        tune_df, test_df = split_outsiders(out_df)
+        tune_conf = model.predict_proba(tune_df[feature_columns(df)]).max(axis=1)
+    threshold, how = choose_threshold(genuine, tune_conf)
+    save_bundle(model, feature_columns(df), threshold)
+    print(f"Chose {best_name}; threshold {threshold:.2f} ({how}); saved -> {MODEL_PATH}")
+    if test_df is not None and len(test_df):
+        test_conf = model.predict_proba(test_df[feature_columns(df)]).max(axis=1)
+        print(f"Held-out outsiders rejected: {(test_conf < threshold).sum()}/{len(test_conf)}")
+
+
+if __name__ == "__main__":
+    main()
