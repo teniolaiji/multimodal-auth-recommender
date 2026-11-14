@@ -41,10 +41,14 @@ python src/image_features.py         # image_features.csv, train + evaluate the 
 python -m src.audio_pipeline         # audio_features.csv, train + evaluate the voice model
 python src/demo.py --member towi --other kethia --outsider towi   # all 4 demo scenarios
 python src/app.py --face data/images/towi/towi_neutral.jpg --voice data/audio/towi/towi_yes_approve.wav
+python src/app.py --explain          # asks for the two files, then shows what each model sees and every probability
 ```
 
 `demo.py` runs: (1) approved transaction, (2) outsider face denied, (3) outsider voice denied,
 (4) right face with another member's voice denied. `app.py` exits with code 0 when access is granted, 1 when denied.
+
+Notebooks: `notebooks/multimodal_auth_system.ipynb` (whole system, tabular part in full),
+`notebooks/image_processing.ipynb` (face steps) and `notebooks/audio_processing.ipynb` (voice steps).
 
 Every model is evaluated with accuracy, macro F1 and log loss, holding out whole originals
 (a customer, a photo or a recording) so augmented copies never leak into the test fold.
