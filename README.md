@@ -5,7 +5,7 @@ ALU Formative 2: Multimodal Data Preprocessing. Group 32.
 A user is identified by **face**, a **product model** predicts which product category they would buy, and the prediction is only shown after **voice** verification confirms it is the same person. Any failed check means access denied.
 
 - **Report:** see the PDF submitted on Canvas
-- **Demo video:** _(link)_
+- **Demo video:** [Video](https://drive.google.com/file/d/1sB4miEeUjr1Pq5bY_rO6Ravlcv6vLhPr/view?usp=sharing)
 - **Contribution tracker:** [Google Sheet](https://docs.google.com/spreadsheets/d/15F1ADVbkytfpCQRSzjRjeGjX7Jv60VrhuZOJOFpeyZ4/edit?usp=sharing)
 
 ## How it works
